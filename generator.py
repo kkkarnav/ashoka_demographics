@@ -1,12 +1,11 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import pprint
 
 import scraper
 
 
-def setup():
+def charts_setup():
     sns.set(rc={"figure.figsize": (11.7, 8.27)})
     sns.set(
         rc={
@@ -19,83 +18,6 @@ def setup():
             "ytick.color": "white",
         }
     )
-
-
-def plot_size_over_years(cohort_counts):
-
-    # get each cohort sorted by year
-    cohort_counts_sorted_by_year = sorted(
-        sorted(cohort_counts, key=lambda x: x[1].split(" ")[0], reverse=True),
-        key=lambda x: x[1].split("-")[-1],  # sorts cohorts by graduating year
-        reverse=False,  # in ascending order
-    )
-
-    # plot bar chart
-    data = pd.DataFrame(cohort_counts_sorted_by_year, columns=["size", "cohort"])
-    size_over_years_plot = sns.barplot(data=data, x="cohort", y="size")
-    plt.setp(size_over_years_plot.get_xticklabels(), rotation=75)
-    plt.tick_params(axis="x", labelsize=8)
-    plt.tick_params(axis="y", labelsize=12)
-    plt.show()
-
-
-def plot_current_composition(cohort_counts, df):
-
-    df = df[df.status.isin(['Enrolled'])]
-    df.sort_values(by=['batch'])
-    pprint.pprint(df)
-
-    # get all cohorts currently at the university, in order of enrollment
-    current_cohorts = sorted(
-        sorted(
-            filter(
-                lambda x: "2021" in x[1] or "-22" in x[1] or "-23" in x[1],
-                cohort_counts,
-            ),
-            # only keep students currently at the university
-            key=lambda x: x[0],
-            reverse=False,  # in ascending order
-        ),
-        key=lambda x: x[1].split("-")[0].split(" ")[-1],  # sorts cohorts by intake year
-        reverse=False,  # in ascending order
-    )
-
-    # configs for pie chart
-    current_cohorts = sorted(current_cohorts, key=lambda x: x[0], reverse=True)
-    data, labels = list(zip(*current_cohorts))[0], list(zip(*current_cohorts))[1]
-    colors = sns.color_palette("pastel")[0 : len(data)]
-
-    # plot pie chart
-    patches, texts, autotexts = plt.pie(
-        data, labels=labels, colors=colors, autopct="%.0f%%"
-    )
-    [text.set_color("white") for text in texts]
-    [autotext.set_color("black") for autotext in autotexts]
-
-    # circle for donut
-    centre_circle = plt.Circle((0, 0), 0.70, fc="black")
-    fig = plt.gcf()
-    fig.gca().add_artist(centre_circle)
-
-    plt.show()
-
-
-# get the number of cohorts and the number of students per cohort
-def plot_sizes(dataset, df):
-
-    batches = [student[0] for student in dataset]  # extract every student's cohort
-
-    cohort_counts = list(
-        filter(
-            lambda x: "VISP" not in x[1] and "YSP" not in x[1] and "VSP" not in x[1],
-            # remove visiting students and highschoolers
-            [[batches.count(batch), batch] for batch in set(batches)],
-            # compose tuple of cohort and number of students in it
-        )
-    )
-
-    plot_current_composition(cohort_counts, df)
-    plot_size_over_years(cohort_counts)
 
 
 def plot_majors(dataset):
@@ -137,38 +59,106 @@ def plot_majors(dataset):
         ]
         subjects_by_cohort[cohort_year] = cohort_subjects
 
-    for cohort in subjects_by_cohort.values():
-        print(cohort[0])
+
+def get_cohorts_by_size(students):
+
+    # organize students by cohorts
+    cohorts = [x[2] for x in students]
+
+    # get the number of students in each cohort
+    cohorts_with_sizes = [[cohorts.count(cohort), cohort] for cohort in set(cohorts)]
+
+    # sort by year of graduation, and size within that
+    cohorts_with_sizes_by_graduating_year = sorted(
+        cohorts_with_sizes, key=lambda x: x[0], reverse=True
+    )
+
+    return cohorts_with_sizes_by_graduating_year
+
+
+def plot_size_over_years(dataset):
+    # get number of students per cohort organized by size
+    cohorts_with_sizes_by_sizes = get_cohorts_by_size(dataset)
+
+    # sort by graduating year
+    cohorts_with_sizes_by_graduating_year = sorted(
+        cohorts_with_sizes_by_sizes, key=lambda x: x[1][-2:], reverse=False
+    )
+
+    # plot bar chart
+    data = pd.DataFrame(
+        cohorts_with_sizes_by_graduating_year, columns=["size", "cohort"]
+    )
+    size_over_years_plot = sns.barplot(data=data, x="cohort", y="size")
+    plt.setp(size_over_years_plot.get_xticklabels(), rotation=75)
+    plt.tick_params(axis="x", labelsize=8)
+    plt.tick_params(axis="y", labelsize=12)
+    plt.show()
+
+
+def plot_composition(dataset):
+
+    # get number of students per cohort organized by size
+    cohorts_with_sizes_by_size = get_cohorts_by_size(dataset)
+
+    # reconfigure as two lists for donut chart
+    data = list(zip(*cohorts_with_sizes_by_size))
+
+    # configs for donut chart
+    data, labels = (
+        data[0],
+        data[1],
+    )
+
+    # plot chart
+    patches, texts, autotexts = plt.pie(
+        data, labels=labels, colors=sns.color_palette("pastel"), autopct="%.0f%%"
+    )
+
+    # configs for donut chart
+    [text.set_color("white") for text in texts]
+    [autotext.set_color("black") for autotext in autotexts]
+
+    # circle for donut chart
+    centre_circle = plt.Circle((0, 0), 0.70, fc="black")
+    fig = plt.gcf()
+    fig.gca().add_artist(centre_circle)
+
+    plt.show()
 
 
 def clean_data(dataset):
 
-    # removes temporary students
+    # removes entries for temporary students
+    # also removes identifying information for all students
     clean_dataset = [
-        row
+        [
+            row[0][:-7].strip() if "PHD" not in row[0] else row[0],  # program
+            row[0][-7:].strip() if "PHD" not in row[0] else "",  # batch
+            row[0],  # cohort
+            row[4],  # status
+            row[5],  # subjects pursuing
+        ]
         for row in dataset
         if "VISP" not in row[0] and "YSP" not in row[0] and "VSP" not in row[0]
     ]
 
-    for row in clean_dataset:
-        if "Pragya" in row[3]:
-            print(row)
-
-    df = pd.DataFrame(
-        clean_dataset, columns=["batch", "email", "id", "name", "status", "subjects"]
-    )
-    df.drop(["email", "id", "name"], axis=1)
-
-    return df
+    return clean_dataset
 
 
 def main():
-    setup()
+    charts_setup()
 
     dataset = scraper.main()
-    df = clean_data(dataset)
-    plot_sizes(dataset, df)
-    plot_majors(dataset)
+    clean_dataset = clean_data(dataset)
+
+    # get only students currently enrolled
+    current_dataset = list(filter(lambda x: "Enrolled" in x[3], clean_dataset))
+
+    '''plot_size_over_years(clean_dataset)
+    plot_composition(clean_dataset)
+    plot_size_over_years(current_dataset)
+    plot_composition(current_dataset)'''
 
 
 if __name__ == "__main__":

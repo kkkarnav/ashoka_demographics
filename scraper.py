@@ -28,7 +28,7 @@ def setup():
 
 
 # engine function to submit text to an input field
-def fill_text(findby_criteria, find_parameter, fill_parameter):
+def fill_text(driver, findby_criteria, find_parameter, fill_parameter):
     text_area = driver.find_element(findby_criteria, find_parameter)
     text_area.send_keys(fill_parameter)
     text_area.send_keys(Keys.RETURN)
@@ -36,14 +36,14 @@ def fill_text(findby_criteria, find_parameter, fill_parameter):
 
 
 # logs into the ashoka website with your email and password
-def get_past_login(USERNAME, PASSWORD):
-    fill_text(By.ID, "identifierId", USERNAME)
-    fill_text(By.NAME, "password", PASSWORD)
+def get_past_login(driver, USERNAME, PASSWORD):
+    fill_text(driver, By.ID, "identifierId", USERNAME)
+    fill_text(driver, By.NAME, "password", PASSWORD)
     sleep(10)
 
 
 # starting from the home page, locates the specified menu and submenu and clicks on it
-def navigate_to_page(menu_number, submenu_name):
+def navigate_to_page(driver, menu_number, submenu_name):
     link = driver.find_elements(By.CLASS_NAME, "dropdown-toggle")[menu_number]
 
     open_menu = ActionChains(driver)
@@ -59,7 +59,7 @@ def navigate_to_page(menu_number, submenu_name):
 # intended for the Major Minor Report page
 # this function is prone to failing because the page arbitrarily async loads
 # clicks the get button, then switches pagesize to all to get all the data
-def grab_data():
+def grab_data(driver):
     get_button = driver.find_element(By.CLASS_NAME, "blue")
     click_get = wait(driver, 10).until(EC.element_to_be_clickable(get_button))
     click_get.click()
@@ -75,17 +75,17 @@ def grab_data():
     return driver.page_source
 
 
-def scraper():
+def scrape(driver):
 
     driver.get("https://ams.ashoka.edu.in/")
 
-    USERNAME = "<YOUR MAIL HERE>"
-    PASSWORD = "<YOUR PASSWORD HERE>"
-    get_past_login(USERNAME, PASSWORD)
+    USERNAME = "<yourusername>"
+    PASSWORD = "<yourpassword>"
+    get_past_login(driver, USERNAME, PASSWORD)
 
-    navigate_to_page(8, "Major Minor Report")
+    navigate_to_page(driver, 8, "Major Minor Report")
 
-    html_data = grab_data()
+    html_data = grab_data(driver)
 
     html_data = html_data.split(
         "TableAdvanceSearch pagerDisabled tablesorter tablesorter-bootstrap "
@@ -131,13 +131,13 @@ def process_html(raw_data):
 
 def main():
 
-    # get the data from source
-    # driver = setup()
-    # copy = scraper()
-
     # OR use pre retrieved data
     with open("./new.txt", "r") as f:
         copy = f.read()
+
+    # get the data from source
+    # driver = setup()
+    # copy = scrape(driver)
 
     dataset = process_html(copy)
     return dataset
