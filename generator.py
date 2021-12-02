@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import pprint
 
 import scraper
 
@@ -22,42 +23,91 @@ def charts_setup():
 
 def plot_majors(dataset):
     subjects = (
-        "ENG",
         "CS",
-        "MAT",
-        "PSY",
         "POL",
-        "BIO",
+        "ECO",
         "PHY",
         "SOC",
         "HIS",
-        "IR",
         "VA",
-        "ECO",
+        "CHM",
         "CW",
+        "MAT",
         "PHI",
         "MS",
+        "BIO",
         "PPE",
+        "IR",
+        "FIN",
         "SOA",
         "ENT",
         "ES",
-        "CHM",
+        "PSY",
         "SAN",
-        "FIN",
+        "ENG"
     )
 
-    subjects_by_cohort = {}
-    for cohort_year in range(17, 24):
-        cohort = [
-            x[-1]
-            for x in filter(
-                lambda x: "UG" in x[0] and "-" + str(cohort_year) in x[0], dataset
-            )
-        ]
-        cohort_subjects = [
-            len(list(filter(lambda x: subject in x, cohort))) for subject in subjects
-        ]
-        subjects_by_cohort[cohort_year] = cohort_subjects
+    # only take UG and ASP students
+    undergraduates = list(filter(lambda x: x[0] == "UG" or x[0] == "ASP", dataset))
+
+    # subject: students studying the subject, students majoring in it, minoring in it, concentrating in it
+    subjects_with_sizes = {subject: [0, 0, 0, 0] for subject in subjects}
+
+    # iterate over every undergraduate for every subject offered
+    for subject in subjects:
+        for student in undergraduates:
+
+            if subject in student[4]:
+                subjects_with_sizes[subject][0] += 1
+            if "Major - " + subject in student[4]:
+                subjects_with_sizes[subject][1] += 1
+            if "Minor - " + subject in student[4]:
+                subjects_with_sizes[subject][2] += 1
+            if "Concentration - " + subject in student[4]:
+                subjects_with_sizes[subject][3] += 1
+
+    # sort by number of students taking subject
+    subjects_with_sizes_by_size = (
+        sorted(subjects_with_sizes.items(), key=lambda item: item[1][1], reverse=True)
+    )
+
+    # configs for bar chart
+    plot_data = [[x[1][1], x[0]] for x in subjects_with_sizes_by_size]
+
+    # plot bar chart
+    data = pd.DataFrame(
+        plot_data, columns=["size", "subject"]
+    )
+
+    '''# plot bar chart
+    size_over_subjects_plot = sns.barplot(data=data, x="subject", y="size")
+    plt.tick_params(axis="x", labelsize=12)
+    plt.tick_params(axis="y", labelsize=12)
+    plt.show()'''
+
+    # reconfigure as two lists for donut chart
+    data = list(zip(*plot_data))
+
+    # configs for donut chart
+    data, labels = (
+        data[0],
+        data[1],
+    )
+
+    # plot chart
+    patches, texts = plt.pie(
+        data, labels=labels, colors=[sns.color_palette("Spectral", len(labels))[subjects.index(key)] for key in labels]
+    )
+
+    # configs for donut chart
+    [text.set_color("white") for text in texts]
+
+    # circle for donut chart
+    centre_circle = plt.Circle((0, 0), 0.70, fc="black")
+    fig = plt.gcf()
+    fig.gca().add_artist(centre_circle)
+
+    plt.show()
 
 
 def get_cohorts_by_size(students):
@@ -112,7 +162,7 @@ def plot_composition(dataset):
 
     # plot chart
     patches, texts, autotexts = plt.pie(
-        data, labels=labels, colors=sns.color_palette("pastel"), autopct="%.0f%%"
+        data, labels=labels, colors=sns.color_palette("Spectral"), autopct="%.0f%%"
     )
 
     # configs for donut chart
@@ -156,9 +206,11 @@ def main():
     current_dataset = list(filter(lambda x: "Enrolled" in x[3], clean_dataset))
 
     '''plot_size_over_years(clean_dataset)
-    plot_composition(clean_dataset)
     plot_size_over_years(current_dataset)
+    plot_composition(clean_dataset)
     plot_composition(current_dataset)'''
+    for i in range(14, 21):
+        plot_majors([x for x in clean_dataset if 'UG 20'+str(i)+'-'+str(i+3) in x[2]])
 
 
 if __name__ == "__main__":
