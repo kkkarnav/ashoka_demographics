@@ -7,11 +7,14 @@ from selenium.webdriver.support.ui import WebDriverWait as wait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
 
+import os
+from dotenv import load_dotenv
 from time import sleep
 import json
 
 
 def setup():
+    load_dotenv()
     # needs a geckodriver.exe in the same folder as a script,
     # as well as a firefox exe in the specified location
     options = Options()
@@ -79,8 +82,8 @@ def scrape(driver):
 
     driver.get("https://ams.ashoka.edu.in/")
 
-    USERNAME = "<yourusername>"
-    PASSWORD = "<yourpassword>"
+    USERNAME = os.getenv('EMAIL')
+    PASSWORD = os.getenv('PASSWORD')
     get_past_login(driver, USERNAME, PASSWORD)
 
     navigate_to_page(driver, 8, "Major Minor Report")
@@ -131,13 +134,13 @@ def process_html(raw_data):
 
 def main():
 
-    # OR use pre retrieved data
-    with open("./new.txt", "r") as f:
-        copy = f.read()
-
     # get the data from source
-    # driver = setup()
-    # copy = scrape(driver)
+    driver = setup()
+    copy = scrape(driver)
+
+    # OR use pre retrieved data
+    # with open("./new.txt", "r") as f:
+    #    copy = f.read()
 
     dataset = process_html(copy)
     return dataset
