@@ -44,7 +44,7 @@ def plot_majors(dataset):
         "ES",
         "PSY",
         "SAN",
-        "ENG"
+        "ENG",
     )
 
     # only take UG and ASP students
@@ -67,23 +67,22 @@ def plot_majors(dataset):
                 subjects_with_sizes[subject][3] += 1
 
     # sort by number of students taking subject
-    subjects_with_sizes_by_size = (
-        sorted(subjects_with_sizes.items(), key=lambda item: item[1][1], reverse=True)
+    subjects_with_sizes_by_size = sorted(
+        subjects_with_sizes.items(), key=lambda item: item[1][1], reverse=True
     )
 
     # configs for bar chart
     plot_data = [[x[1][1], x[0]] for x in subjects_with_sizes_by_size]
+    pprint.pprint(plot_data)
 
     # plot bar chart
-    data = pd.DataFrame(
-        plot_data, columns=["size", "subject"]
-    )
+    data = pd.DataFrame(plot_data, columns=["size", "subject"])
 
-    '''# plot bar chart
+    """# plot bar chart
     size_over_subjects_plot = sns.barplot(data=data, x="subject", y="size")
     plt.tick_params(axis="x", labelsize=12)
     plt.tick_params(axis="y", labelsize=12)
-    plt.show()'''
+    plt.show()"""
 
     # reconfigure as two lists for donut chart
     data = list(zip(*plot_data))
@@ -96,7 +95,12 @@ def plot_majors(dataset):
 
     # plot chart
     patches, texts = plt.pie(
-        data, labels=labels, colors=[sns.color_palette("Spectral", len(labels))[subjects.index(key)] for key in labels]
+        data,
+        labels=labels,
+        colors=[
+            sns.color_palette("Spectral", len(labels))[subjects.index(key)]
+            for key in labels
+        ],
     )
 
     # configs for donut chart
@@ -112,7 +116,7 @@ def plot_majors(dataset):
 
 def get_cohorts_by_size(students):
 
-    # organize students by cohorts
+    # organize students by cohorts by getting the third column (program + batch) of each row
     cohorts = [x[2] for x in students]
 
     # get the number of students in each cohort
@@ -139,6 +143,7 @@ def plot_size_over_years(dataset):
     data = pd.DataFrame(
         cohorts_with_sizes_by_graduating_year, columns=["size", "cohort"]
     )
+    print(data)
     size_over_years_plot = sns.barplot(data=data, x="cohort", y="size")
     plt.setp(size_over_years_plot.get_xticklabels(), rotation=75)
     plt.tick_params(axis="x", labelsize=8)
@@ -205,12 +210,12 @@ def main():
     # get only students currently enrolled
     current_dataset = list(filter(lambda x: "Enrolled" in x[3], clean_dataset))
 
-    '''plot_size_over_years(clean_dataset)
+    plot_size_over_years(clean_dataset)
     plot_size_over_years(current_dataset)
     plot_composition(clean_dataset)
-    plot_composition(current_dataset)'''
-    for i in range(14, 21):
-        plot_majors([x for x in clean_dataset if 'UG 20'+str(i)+'-'+str(i+3) in x[2]])
+    plot_composition(current_dataset)
+    plot_majors(current_dataset)
+    plot_majors(row for row in clean_dataset if row not in current_dataset)
 
 
 if __name__ == "__main__":

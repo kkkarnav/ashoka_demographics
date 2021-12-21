@@ -82,8 +82,8 @@ def scrape(driver):
 
     driver.get("https://ams.ashoka.edu.in/")
 
-    USERNAME = os.getenv('EMAIL')
-    PASSWORD = os.getenv('PASSWORD')
+    USERNAME = os.getenv("EMAIL")
+    PASSWORD = os.getenv("PASSWORD")
     get_past_login(driver, USERNAME, PASSWORD)
 
     navigate_to_page(driver, 8, "Major Minor Report")
@@ -135,12 +135,12 @@ def process_html(raw_data):
 def main():
 
     # get the data from source
-    driver = setup()
-    copy = scrape(driver)
+    # driver = setup()
+    # copy = scrape(driver)
 
     # OR use pre retrieved data
-    # with open("./new.txt", "r") as f:
-    #    copy = f.read()
+    with open("./ashoka_demographics/new.txt", "r") as f:
+        copy = f.read()
 
     dataset = process_html(copy)
     return dataset
